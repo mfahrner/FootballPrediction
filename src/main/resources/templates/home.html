@@ -1,0 +1,59 @@
+<html lang="en">
+<head>
+    <title>Bootstrap Example</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+
+    <form class="form-horizontal" action="/" method="post">
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="homeId">Home Team:</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="homeId" placeholder="Enter Home Team Name" name="homeName">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="awayId">Away Team:</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="awayId" placeholder="Enter Away Team Name" name="awayName">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-danger">Calculate</button>
+    </form>
+
+    <H1><FONT color=blue> Welcome to Mike's Stone Cold Lead Pipe Lock of the Century...</FONT><FONT color=red>Of the Week!</FONT></H1>
+<div>
+
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <th>Team Name</th>
+            <th><a href="/?offPass=offPass">Passing Offense</a></th>
+            <th><a href="/?offRush=offRush">Rushing Offense</a></th>
+            <th><a href="/?defPass=defPass">Passing Defense</a></th>
+            <th><a href="/?defRush=defRush">Rushing Defense</a></th>
+        </tr>
+        </thead>
+        {{#teams}}
+        <tbody>
+        <tr>
+            <td>{{name}}</td>
+            <td>{{offPass}}</td>
+            <td>{{offRush}}</td>
+            <td>{{defPass}}</td>
+            <td>{{defRush}}</td>
+        </tr>
+        </tbody>
+        {{/teams}}
+    </table>
+
+</div>
+</div>
+
+</body>
+</html>
