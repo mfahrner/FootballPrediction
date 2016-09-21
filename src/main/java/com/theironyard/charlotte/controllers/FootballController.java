@@ -60,17 +60,14 @@ public class FootballController {
         Team awayTeam = teams.findByNameIgnoreCase(awayName);
         Team averageTeam = teams.findOne(33);
 
-        double homeOppAveGWPLogit = computeOppGWPLogit(homeTeam.getOpponents());
-        double awayOppAveGWPLogit = computeOppGWPLogit(awayTeam.getOpponents());
+        double homeOppOdds = homeTeam.computeOddsFromProb(homeTeam.getAdjustedAverageOppGWP());
+        double homeOppLogit = homeTeam.computeLogitFromOdds(homeOppOdds);
 
-        double homeAdjustedGWPLogit = homeTeam.computeAdjustedGWPLogit(homeTeam.getTeamLogit(),
-                averageTeam.getTeamLogit(), homeOppAveGWPLogit);
+        double awayOppOdds = awayTeam.computeOddsFromProb(awayTeam.getAdjustedAverageOppGWP());
+        double awayOppLogit = awayTeam.computeLogitFromOdds(awayOppOdds);
         
-        double awayAdjustedGWPLogit = awayTeam.computeAdjustedGWPLogit(awayTeam.getTeamLogit(),
-                averageTeam.getTeamLogit(), awayOppAveGWPLogit);
-
-        double ultimateHomeLogit = homeTeam.computeFinalLogit(homeAdjustedGWPLogit, homeOppAveGWPLogit,
-                awayAdjustedGWPLogit, awayOppAveGWPLogit);
+        double ultimateHomeLogit = homeTeam.computeFinalLogit(homeTeam.getTeamLogit(), homeOppLogit,
+                awayTeam.getTeamLogit(), awayOppLogit);
 
         double homeTeamOdds = homeTeam.computeOdds(ultimateHomeLogit);
 
@@ -98,12 +95,11 @@ public class FootballController {
 
                 String line = fileScanner.nextLine();
                 String[] columns = line.split(",");
-                Integer some = Integer.valueOf(columns[8]);
 
                 Team team = new Team();
 
                 ArrayList<Integer> oppList = new ArrayList<>();
-                oppList.add(some);
+                oppList.add(Integer.valueOf(columns[8]));
                 oppList.add(Integer.valueOf(columns[9]));
 
                 double teamLogit = team.computeTeamLogit(Double.valueOf(columns[1]), Double.valueOf(columns[2]),
@@ -112,25 +108,91 @@ public class FootballController {
 
                 team = new Team(columns[0], Double.valueOf(columns[1]), Double.valueOf(columns[2]),
                         Double.valueOf(columns[5]), Double.valueOf(columns[6]), Double.valueOf(columns[3]),
-                        Double.valueOf(columns[4]), Double.valueOf(columns[7]), teamLogit, oppList);
+                        Double.valueOf(columns[4]), Double.valueOf(columns[7]), teamLogit, oppList, null, null,
+                        null, null, null);
 
                 teams.save(team);
             }
         }
+
+        for (int i = 0; i < teams.count();i++) {
+            Team current = teams.findOne(i + 1);
+            Team averageTeam = teams.findOne(33);
+            double GWPLogit = current.computeGWPLogit(current.getTeamLogit(), averageTeam.getTeamLogit());
+            double GWPodds = current.computeOdds(GWPLogit);
+            double GWP = current.computeProbability(GWPodds);
+            current.setGWP(GWP);
+            teams.save(current);
+            // correct up to here GWP
+            // need to figure oppAverageGWP
+        }
+        // correct up to here next up is adjustment for SOS to figure adjustedGWP
+        for (int i = 0; i < teams.count();i++) {
+            Team current = teams.findOne(i + 1);
+            double oppAverageGWP = computeOppGWP(current.getOpponents());
+            current.setAverageOppGWP(oppAverageGWP);
+            teams.save(current);
+        }
+
+        // correct up to here iteration is next
+        for (int i = 0; i < teams.count();i++) {
+            Team current = teams.findOne(i + 1);
+            Team average = teams.findOne(33);
+            double oppGWPOdds = current.computeOddsFromProb(current.getAverageOppGWP());
+            double oppGWPLogit = current.computeLogitFromOdds(oppGWPOdds);
+            double adjustedTeamLogit = current.computeAdjustedGWPLogit(current.getTeamLogit(), average.getTeamLogit(),
+                    oppGWPLogit);
+            double adjustedOdds = current.computeOdds(adjustedTeamLogit);
+            double adjustedGwp = current.computeProbability(adjustedOdds);
+            current.setAdjustedGWP(adjustedGwp);
+            teams.save(current);
+        }
+
+        for (int i = 0; i < 5; i++) {
+            // correct up to here adjusted opp GWP
+            for (int j = 0; j < teams.count(); j++) {
+                Team current = teams.findOne(j + 1);
+                double adjustedOppAverageGWP = computeAdjustedOppGWP(current.getOpponents());
+                current.setAdjustedAverageOppGWP(adjustedOppAverageGWP);
+                teams.save(current);
+            }
+
+            for (int k = 0; k < teams.count(); k++) {
+                Team current = teams.findOne(k + 1);
+                Team average = teams.findOne(33);
+                double adjustedOppGWPOdds = current.computeOddsFromProb(current.getAdjustedAverageOppGWP());
+                double adjustedOppGWPLogit = current.computeLogitFromOdds(adjustedOppGWPOdds);
+                double adjustedTeamLogit = current.computeAdjustedGWPLogit(current.getTeamLogit(), average.getTeamLogit(),
+                        adjustedOppGWPLogit);
+                double adjustedOdds = current.computeOdds(adjustedTeamLogit);
+                double adjustedGwp = current.computeProbability(adjustedOdds);
+                current.setAdjustedGWP(adjustedGwp);
+                teams.save(current);
+            }
+        }
     }
 
-    public double computeOppGWPLogit(ArrayList<Integer> oppList) {
+    public double computeOppGWP(ArrayList<Integer> oppList) {
         double totalOppGWP = 0;
-        double aveLogit = teams.findOne(33).getTeamLogit();
         for (int i = 0; i < oppList.size(); i++) {
 
             Team oppTeam = teams.findOne(oppList.get(i));
 
-            totalOppGWP = oppTeam.computeGWPLogit(oppTeam.getTeamLogit(), aveLogit) + totalOppGWP;
+            totalOppGWP = oppTeam.getGWP() + totalOppGWP;
         }
         return totalOppGWP/oppList.size();
-
     }
 
+    public double computeAdjustedOppGWP(ArrayList<Integer> oppList) {
+        double totalOppGWP = 0;
+        double avgGWP = teams.findOne(33).getGWP();
+        for (int i = 0; i < oppList.size(); i++) {
+
+            Team oppTeam = teams.findOne(oppList.get(i));
+
+            totalOppGWP = oppTeam.getAdjustedGWP() + totalOppGWP;
+        }
+        return totalOppGWP/oppList.size();
+    }
 }
 

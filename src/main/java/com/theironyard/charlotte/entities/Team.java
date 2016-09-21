@@ -63,10 +63,28 @@ public class Team {
     @Column(nullable = true)
     ArrayList<Integer> opponents;
 
+    @Column(nullable = true)
+    Double GWP;
+
+    @Column(nullable = true)
+    Double adjustedGWP;
+
+    @Column(nullable = true)
+    Double averageOppGWP;
+
+    @Column(nullable = true)
+    Double adjustedAverageOppGWP;
+
+    @Column(nullable = true)
+    Double adjustedTeamLogit;
+
+
     public Team() {
     }
 
-    public Team(String name, Double offPass, Double offRush, Double offInterceptions, Double offFumbles, Double defPass, Double defRush, Double penalty, Double teamLogit, ArrayList<Integer> opponents) {
+    public Team(String name, Double offPass, Double offRush, Double offInterceptions, Double offFumbles, Double defPass,
+                Double defRush, Double penalty, Double teamLogit, ArrayList<Integer> opponents, Double GWP,
+                Double adjustedGWP, Double averageOppGWP, Double adjustedAverageOppGWP, Double adjustedTeamLogit) {
         this.name = name;
         this.offPass = offPass;
         this.offRush = offRush;
@@ -77,6 +95,11 @@ public class Team {
         this.penalty = penalty;
         this.teamLogit = teamLogit;
         this.opponents = opponents;
+        this.GWP = GWP;
+        this.adjustedGWP = adjustedGWP;
+        this.averageOppGWP = averageOppGWP;
+        this.adjustedAverageOppGWP = adjustedAverageOppGWP;
+        this.adjustedTeamLogit = adjustedTeamLogit;
     }
 
     public Integer getId() {
@@ -167,6 +190,47 @@ public class Team {
         this.opponents = opponents;
     }
 
+    public Double getGWP() {
+        return GWP;
+    }
+
+    public void setGWP(Double GWP) {
+        this.GWP = GWP;
+    }
+
+    public Double getAdjustedGWP() {
+        return adjustedGWP;
+    }
+
+    public void setAdjustedGWP(Double adjustedGWP) {
+        this.adjustedGWP = adjustedGWP;
+    }
+
+    public Double getAverageOppGWP() {
+        return averageOppGWP;
+    }
+
+    public void setAverageOppGWP(Double averageOppGWP) {
+        this.averageOppGWP = averageOppGWP;
+    }
+
+    public Double getAdjustedAverageOppGWP() {
+        return adjustedAverageOppGWP;
+    }
+
+    public void setAdjustedAverageOppGWP(Double adjustedAverageOppGWP) {
+        this.adjustedAverageOppGWP = adjustedAverageOppGWP;
+    }
+
+    public Double getAdjustedTeamLogit() {
+        return adjustedTeamLogit;
+    }
+
+    public void setAdjustedTeamLogit(Double adjustedTeamLogit) {
+        this.adjustedTeamLogit = adjustedTeamLogit;
+    }
+
+    // first step correct
     public double computeTeamLogit(double offPass, double offRush, double offInterception, double offFumbles,
                                    double defPass, double defRush, double penalty) {
         double teamlogit = 0;
@@ -181,32 +245,26 @@ public class Team {
         return ultimateLogit;
     }
 
+    // third step correct
     public double computeOdds(double logit) {
         double odds = 0;
         odds = Math.pow(Math.E, logit);
         return odds;
     }
 
+    // fourth step correct
+    // now have GWP
     public double computeProbability(double odds) {
         double probability = 0;
         probability = odds / (1 + odds);
         return probability;
     }
 
-    // take gwpLogit and turn to odds then prob
-
+    // second step correct
     public double computeGWPLogit(double teamLogit, double averageLogit) {
         double gwpLogit = 0;
         gwpLogit = teamLogit - averageLogit;
         return gwpLogit;
-    }
-
-    // Avearage opp. gwp
-
-    public double computeAverageOppGWP(List<Team> opponentList) {
-        double averageOppGWP = 0;
-//        averageOppGWP = sum of oppoenentList / number of oppoenentList
-        return averageOppGWP;
     }
 
     public double computeOddsFromProb(double averageOppGWP) {
